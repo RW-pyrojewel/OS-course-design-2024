@@ -1,2 +1,2 @@
 # OS-course-design-2024
-TJU 2252942
+TJU summer Operating System Course Design project
