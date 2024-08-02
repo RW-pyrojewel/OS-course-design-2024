@@ -89,7 +89,7 @@ sys_pgaccess(void)
 
   if (argaddr(0, &base) < 0 || argint(1, &len) < 0 || argaddr(2, &mask) < 0)
     return -1;
-  if (len > 32)   // pages to be checked should be no more than 20
+  if (len > 32)   // pages to be checked should be no more than 32
     len = 32;
 
   for (int i = 0; i < len; i++) 
