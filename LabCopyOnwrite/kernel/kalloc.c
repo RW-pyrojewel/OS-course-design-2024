@@ -40,7 +40,9 @@ freerange(void *pa_start, void *pa_end)
   char *p;
   p = (char*)PGROUNDUP((uint64)pa_start);
   for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE){
+    acquire(&rcounts.lock);
     rcounts.counts[(uint64)p / PGSIZE] = 1;
+    release(&rcounts.lock);
     kfree(p);
   }
 }

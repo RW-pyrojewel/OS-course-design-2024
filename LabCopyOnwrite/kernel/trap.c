@@ -70,7 +70,7 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
-  } else if (r_scause() == 15){
+  } else if (r_scause() == 13 || r_scause() == 15){
     // page fault
     uint64 va;
     pte_t* pte;
@@ -79,24 +79,27 @@ usertrap(void)
     if (!(pte = walk(p->pagetable, va, 0)))
       goto err;
     // if it's a valid COW mapped page
-    if (*pte & PTE_RSW && *pte & PTE_U && *pte & PTE_V) {
+    if (*pte & PTE_RSW && *pte & PTE_U && *pte & PTE_V){
       uint64 pa = PTE2PA(*pte);
       uint flags = PTE_FLAGS(*pte);
       char* mem;
       acquire(&rcounts.lock);
-      // if more than one processed refers to this page
+      // if more than one processes refers to this page
       if (rcounts.counts[pa / PGSIZE] > 1){
-        rcounts.counts[pa / PGSIZE]--;
         release(&rcounts.lock);
         if (!(mem = kalloc()))
           p->killed = 1;
         else{
           memmove(mem, (char*)pa, PGSIZE);
           va = PGROUNDDOWN(va);
+          *pte &= ~PTE_V;
           if (mappages(p->pagetable, va, PGSIZE, (uint64)mem, (flags | PTE_W) & ~PTE_RSW)){
+            *pte |= ~PTE_V;
             kfree(mem);
             p->killed = 1;
           }
+          else
+            kfree((char*)PGROUNDDOWN(pa));
         }
       }
       else{
@@ -106,9 +109,9 @@ usertrap(void)
       }
     }
     else
-      goto err;
+      p->killed = 1;
   } else {
-   err:
+  err:
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
     p->killed = 1;

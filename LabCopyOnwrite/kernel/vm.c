@@ -379,6 +379,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
         p->killed = 1;
       else {
         memmove(mem, (char*)pa0, PGSIZE);
+        *pte &= ~PTE_V;
         if (mappages(p->pagetable, va0, PGSIZE, (uint64)mem, flags)) {
           kfree(mem);
           p->killed = 1;
